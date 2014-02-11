@@ -1,4 +1,4 @@
-singular
+Singular
 ========
 
 Framework CRUD Silex + AngularJS
