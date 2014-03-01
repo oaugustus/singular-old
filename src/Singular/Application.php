@@ -6,6 +6,7 @@ use Silex\Application as BaseApplication;
 use Silex\ServiceProviderInterface;
 use Symfony\Component\Finder\Finder;
 use Silex\Provider\ServiceControllerServiceProvider;
+use Singular\Exception;
 
 
 /**
@@ -34,6 +35,8 @@ class Application extends BaseApplication
 
         if (!isset($app['base_dir'])){
             throw Exception::baseDirNotFoundError('O diretorio raiz da aplicacao "base_dir" nao foi definido!');
+        } elseif (!is_dir($app['base_dir'])){
+            throw Exception::baseDirNotFoundError('O diretorio raiz da aplicacao "base_dir" nao foi encontrado!');
         }
 
         $this['pack_register'] = $this->share(function() use ($app){
@@ -48,6 +51,9 @@ class Application extends BaseApplication
         $this->autoinclude();
     }
 
+    /**
+     * Inicializa a classe de configuração.
+     */
     private function configure()
     {
         $loader = new ConfigLoader($this);
@@ -63,7 +69,13 @@ class Application extends BaseApplication
         $app = $this;
         $finder = new Finder();
 
-        foreach ($finder->in($app['base_dir']."app")->files()->name('*.php') as $file){
+        $appDir = $app['base_dir']."/app";
+
+        if (!is_dir($appDir)){
+            throw Exception::directoryNotFound('O diretório '.$appDir.' nao foi encontrado');
+        }
+
+        foreach ($finder->in($app['base_dir']."/app")->files()->name('*.php') as $file){
             include_once $file->getRealpath();
         }
     }

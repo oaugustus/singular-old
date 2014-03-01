@@ -29,8 +29,13 @@ class ConfigLoader
     public function loadConfigs()
     {
         $app = $this->app;
+        $configDir = $app['base_dir']."/app/config";
 
-        $this->preloadFiles($app['base_dir']."/app/config");
+        if (!is_dir($configDir)){
+            throw Exception::directoryNotFound('O diretorio "'.$configDir.'" nao foi encontrado!');
+        }
+
+        $this->preloadFiles($configDir);
         $this->registerConfigs();
     }
 

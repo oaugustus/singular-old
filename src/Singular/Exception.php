@@ -26,6 +26,11 @@ class Exception extends \Exception
         return new self('[Base Directory Not Found Error] ' . $message);
     }
 
+    public static function directoryNotFound($message)
+    {
+        return new self('[Directory Not Found Error] '.$message);
+    }
+
     /**
      * Cria uma nova FrameworkException descrevendo a falta de configuração do diretório de arquivos de configuração.
      *
