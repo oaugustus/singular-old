@@ -26,6 +26,13 @@ class Exception extends \Exception
         return new self('[Base Directory Not Found Error] ' . $message);
     }
 
+    /**
+     * Caso não encontre o diretório padrão da aplicação.
+     *
+     * @param $message
+     *
+     * @return Exception
+     */
     public static function directoryNotFound($message)
     {
         return new self('[Directory Not Found Error] '.$message);

@@ -1,0 +1,11 @@
+{
+    "_priority": 100,
+    "db.options": {
+        "driver"    : "pdo_mysql",
+        "host"      : "localhost",
+        "dbname"    : "singular_test",
+        "user"      : "root",
+        "password"  : "root",
+        "charset"   : "utf8"
+    }
+}

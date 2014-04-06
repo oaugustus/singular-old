@@ -44,18 +44,18 @@ class ServiceRegister
 
         switch ($annotation->type) {
             case 'clousure':
-                $app[$serviceKey] = function () use ($class, $app) {
-                    return new $class($app);
+                $app[$serviceKey] = function () use ($class, $app, $pack) {
+                    return new $class($app, $pack->getPackName());
                 };
                 break;
             case 'shared':
-                $app[$serviceKey] = $app->share(function () use ($class, $app) {
-                    return new $class($app);
+                $app[$serviceKey] = $app->share(function () use ($class, $app, $pack) {
+                    return new $class($app, $pack->getPackName());
                 });
                 break;
             case 'protected':
-                $app[$serviceKey] = $app->protect(function () use ($class, $app) {
-                    return new $class($app);
+                $app[$serviceKey] = $app->protect(function () use ($class, $app, $pack) {
+                    return new $class($app, $pack->getPackName());
                 });
                 break;
         }

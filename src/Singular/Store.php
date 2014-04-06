@@ -6,7 +6,14 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Singular\Application;
 
-class SingularStore extends NetonService
+/**
+ * Class Store.
+ *
+ * @package Singular
+ *
+ * @author  Otávio Fernandes <otavio@neton.com.br>
+ */
+class Store extends Service
 {
     /**
      * Tabela origem do store.
@@ -44,12 +51,22 @@ class SingularStore extends NetonService
      *
      * @param Application $app
      */
-    public function __construct(Application $app)
+    public function __construct(Application $app, $pack)
     {
-        parent::__construct($app);
+        parent::__construct($app, $pack);
 
         $this->db = $this->getConnection();
         $this->qb = $this->db->createQueryBuilder();
+    }
+
+    /**
+     * Seta em tempo de execução o nome da tabela a ser utilizada pelo store.
+     *
+     * @param String $table
+     */
+    public function setTable($table)
+    {
+        $this->table = $table;
     }
 
     /**
@@ -88,8 +105,10 @@ class SingularStore extends NetonService
             ->where('1 = 1');
 
         foreach ($filters as $key => $filter) {
-            $qb->andWhere('t.'.$key.' = :'.$key);
+            $filters[$key] = "%$filter%";
+            $qb->andWhere('t.'.$key.' like :'.$key);
         }
+
 
         return $this->db->fetchAssoc($qb->getSQL(), $filters);
     }
@@ -111,7 +130,8 @@ class SingularStore extends NetonService
             ->where('1 = 1');
 
         foreach ($filters as $key => $filter) {
-            $qb->andWhere('t.'.$key.' = :'.$key);
+            $filters[$key] = "%$filter%";
+            $qb->andWhere('t.'.$key.' like :'.$key);
         }
 
         return $this->paginate($qb, $opt, $filters);

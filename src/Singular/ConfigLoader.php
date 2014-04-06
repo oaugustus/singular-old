@@ -68,18 +68,41 @@ class ConfigLoader
                     $params = $json['_params'];
                 }
 
-                $cfgIndex = isset($json['_priority']) ? $json['_priority'] : count($this->files);
+                $cfgIndex = count($this->files);
 
                 $this->files[$cfgIndex] = array(
                     'file' => $file->getRealpath(),
-                    '_params' => $params
+                    '_params' => $params,
+                    '_priority' => isset($json['_priority']) ? $json['_priority'] : 0
                 );
 
             }
 
         }
 
-        ksort($this->files);
+        usort($this->files, array($this,'sortByPriority'));
+    }
+
+    /**
+     * Ordena as entradas dos arquivos pela sua prioridade.
+     *
+     * Arquivos de configuração com prioridade maior serão posicionados no final da lista.
+     *
+     * @param $a
+     * @param $b
+     * @return int
+     */
+    private function sortByPriority($a, $b)
+    {
+        $a = $a['_priority'];
+        $b = $b['_priority'];
+
+        if ($a == $b)
+        {
+            return 0;
+        }
+
+        return ($a < $b) ? -1 : 1;
     }
 
     /**
