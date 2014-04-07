@@ -29,7 +29,7 @@ class Controller
     }
 
     /**
-     * Retorna o nome do serviço do arquivo atual.
+     * Retorna o nome do serviço local do controlador.
      *
      * @return string
      */
@@ -38,5 +38,17 @@ class Controller
         $reflector = new \ReflectionClass($this);
 
         return strtolower($reflector->getShortName());
+    }
+
+    /**
+     * Retorna o nome da classe do controlador.
+     *
+     * @return string
+     */
+    protected function getClassName()
+    {
+        $reflector = new \ReflectionClass($this);
+
+        return $reflector->getName();
     }
 }

@@ -34,7 +34,7 @@ class Store extends Service
      *
      * @var string
      */
-    protected $connectionName = 'default';
+    protected $conn = 'default';
 
     /**
      * @var Connection;
@@ -63,10 +63,13 @@ class Store extends Service
      * Seta em tempo de execução o nome da tabela a ser utilizada pelo store.
      *
      * @param String $table
+     * @param String $conn
      */
-    public function setTable($table)
+    public function setTable($table, $conn = 'default')
     {
         $this->table = $table;
+        $this->conn = $conn;
+        $this->db = $this->getConnection();
     }
 
     /**
@@ -368,10 +371,10 @@ class Store extends Service
      */
     private function getConnection()
     {
-        if ('default' == $this->connectionName) {
+        if ('default' == $this->conn) {
             return $this->app['db'];
         } else {
-            return $this->app['dbs'][$this->connectionName];
+            return $this->app['dbs'][$this->conn];
         }
     }
 }

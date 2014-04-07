@@ -3,6 +3,9 @@ namespace Singular;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Singular\Annotation\Route;
+use Singular\Crud\Form;
+use Singular\Crud\Grid;
+use Singular\Store;
 
 /**
  * Class CrudController.
@@ -33,13 +36,15 @@ class CrudController extends Controller
      *
      * @var string
      */
-    protected $conn = 'db';
+    protected $conn = 'default';
 
     public function __construct(Application $app, $pack)
     {
-        parent::__construct($app, $pack);
+        if ($this->table == ''){
+            throw new \Exception('A propriedade $table do CrudController "'.$this->getClassName().'" precisa ser definida');
+        }
 
-        $this->store = $this->getStore();
+        parent::__construct($app, $pack);
     }
 
     /**
@@ -56,7 +61,7 @@ class CrudController extends Controller
         $app = $this->app;
 
         $id = $request->get('id',1);//@todo: remover default = 1
-        $rec = $this->store->find($id);
+        $rec = $this->getStore()->find($id);
 
         return $app->json(array(
             'success' => $rec ? true : false,
@@ -80,8 +85,8 @@ class CrudController extends Controller
         $success = true;
 
         try {
-            $request->request->set('name','Enx');//@todo: remover atribuição
-            $result = $this->store->findBy($request->request->all());
+            $request->request->set('name','Mas');//@todo: remover atribuição
+            $result = $this->getStore()->findBy($request->request->all());
 
         } catch(\Exception $e) {
             $result = false;
@@ -97,7 +102,7 @@ class CrudController extends Controller
     /**
      * Cria ou atualiza um registro na tabela.
      *
-     * @route(method="post")
+     * @route(method="get")
      *
      * @param Request $request
      *
@@ -105,7 +110,15 @@ class CrudController extends Controller
      */
     public function save(Request $request)
     {
+        $app = $this->app;
 
+        $data = $request->request->all();
+        $saved = $this->getStore()->save($data);
+
+        return $app->json(array(
+            'success' => (bool)$saved,
+            'result' => $saved
+        ));
     }
 
     /**
@@ -124,14 +137,14 @@ class CrudController extends Controller
         $id = $request->get('id',2); // @todo: remover default
 
         return $app->json(array(
-            'success' => $this->store->remove($id)
+            'success' => $this->getStore()->remove($id)
         ));
     }
 
     /**
      * Remove uma seleção de registros da tabela.
      *
-     * @route(method="post")
+     * @route(method="get")
      *
      * @param Request $request
      *
@@ -139,7 +152,35 @@ class CrudController extends Controller
      */
     public function removeSelection(Request $request)
     {
+        $app = $this->app;
 
+        $ids = $request->get('ids',array(5,6)); // @todo: remover default
+
+        $allRemoved = true;
+
+        foreach ($ids as $id) {
+            if (!$this->getStore()->remove($id)) {
+                $allRemoved = false;
+            }
+        }
+
+        return $app->json(array(
+            'success' => $allRemoved
+        ));
+    }
+
+    /**
+     * Testa a compilação do formulário.
+     *
+     * @route(method="get")
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
+    public function compileForm(Request $request)
+    {
+        return $this->app->json($this->getForm()->compile());
     }
 
     /**
@@ -149,22 +190,81 @@ class CrudController extends Controller
      */
     private function getStore()
     {
+        return $this->getService('store');
+    }
+
+    /**
+     * Recupera o serviço de formulário associado ao CrudController.
+     *
+     * @return Form
+     */
+    private function getForm()
+    {
+        return $this->getService('form');
+    }
+
+    /**
+     * Recupera o serviço de grid associado ao CrudController
+     *
+     * @return Grid
+     */
+    private function getGrid()
+    {
+        return $this->getService('grid');
+    }
+
+    /**
+     * Retorna um serviço (Form,Grid,Store) associado ao CrudController.
+     *
+     * @param String $service
+     *
+     * @return Service
+     */
+    private function getService($service)
+    {
         $app = $this->app;
         $pack = $this->pack;
         $table = $this->table;
-        $storeService = $pack.".store.".$this->getServiceName();
+        $serviceName = $pack.".$service.".$this->getServiceName();
 
-        if (!isset($app[$storeService])) {
-            $app[$storeService] = $app->share(function () use ($app, $pack, $table) {
-                $store = new Store($app, $pack);
-                $store->setTable($table);
+        if (!isset($app[$serviceName])) {
+            $class = $this->getServiceClass($service);
 
-                return $store;
+            $app[$serviceName] = $app->share(function () use ($app, $pack, $table, $class) {
+                $service = new $class($app, $pack);
+                $service->setTable($table, $this->conn);
+
+                return $service;
             });
+
         } else {
-            $app[$storeService]->setTable($table);
+            $app[$serviceName]->setTable($table, $this->conn);
         }
 
-        return $app[$storeService];
+        return $app[$serviceName];
+    }
+
+    /**
+     * Retorna o nome da classe base de um serviço do CrudController.
+     *
+     * @param String $service
+     *
+     * @return String
+     */
+    private function getServiceClass($service)
+    {
+        switch ($service) {
+            case 'store':
+                return 'Store';
+            break;
+            case 'form':
+                return 'Singular\Crud\Form';
+            break;
+            case 'grid':
+                return 'Singular\Crud\Grid';
+            break;
+            default:
+                throw new \Exception('Serviço '.$service.' não foi localizado');
+        }
     }
 } 
