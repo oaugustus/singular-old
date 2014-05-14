@@ -51,4 +51,16 @@ class Controller
 
         return $reflector->getName();
     }
+
+    /**
+     * Retorna o nome direto da classe, sem namespaces.
+     *
+     * @return string
+     */
+    protected function getShortName()
+    {
+        $reflector = new \ReflectionClass($this);
+
+        return $reflector->getShortName();
+    }
 }

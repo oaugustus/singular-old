@@ -36,7 +36,7 @@ class Field
      *
      * @var int
      */
-    protected $precision;
+    protected $precision = 2;
 
     /**
      * Casas decimais do campo.
@@ -71,7 +71,7 @@ class Field
      *
      * @var int
      */
-    protected $row = 100;
+    protected $row = 1000;
 
     /**
      * Tamanho da coluna do campo no formulário (bootstrap).
@@ -130,6 +130,21 @@ class Field
     protected $label = '';
 
     /**
+     * Checkbox valor verdadeiro.
+     *
+     * @var string
+     */
+    protected $trueValue = '';
+
+    /**
+     * Checkbox valor falso.
+     *
+     * @var string
+     */
+    protected $falseValue = '';
+
+
+    /**
      * Inicializa o objeto campo.
      *
      * @param array $params
@@ -173,8 +188,12 @@ class Field
 
         $def[] = 'name="'.$this->name.'"';
 
-        if ($this->notnull){
+        if ($this->notnull && !$this->autoincrement){
             $def[] = 'required';
+        }
+
+        if ($this->autoincrement){
+            $def[] = 'readonly';
         }
 
         if ($this->max > 0) {
@@ -185,10 +204,23 @@ class Field
             $def[] = 'ng-minlength="'.$this->min.'"';
         }
 
+        if ($this->trueValue != '')
+            $def[] = 'true-value="'.$this->trueValue.'"';
+
+        if ($this->falseValue != '')
+            $def[] = 'false-value="'.$this->falseValue.'"';
+
+        //if ($this->precision > 0){
+            $def[] = 'precision="'.$this->scale  .'"';
+        //}
+
+        $def[] = 'label = "'.$this->label.'"';
         $field = $this->$method($def);
 
+        return sprintf('<div class="col-md-%d">%s</div>', $this->col, $field);
+
         return sprintf(
-            '<div class="col-md-%d"><label class="control-label">%s</label>%s</div>',
+            '<div class="col-md-%d"><div class="form-group"><label class="control-label">%s</label>%s</div></div>',
             $this->col,
             $this->label,
             $field
@@ -208,7 +240,7 @@ class Field
 
         $def = implode(' ', $def);
 
-        $tpl = "<input $def/>";
+        $tpl = "<sing-form-number $def></sing-form-number>";
 
         return $tpl;
     }
@@ -222,11 +254,9 @@ class Field
      */
     private function renderText($def)
     {
-        $def[] = 'type="text"';
-
         $def = implode(' ', $def);
 
-        $tpl = "<input $def/>";
+        $tpl = "<sing-form-text $def></sing-form-text>";
 
         return $tpl;
     }
@@ -242,7 +272,7 @@ class Field
     {
         $def = implode(' ', $def);
 
-        $tpl = "<textarea $def/></textarea>";
+        $tpl = "<sing-form-textarea $def/></sing-form-textarea>";
 
         return $tpl;
     }
@@ -256,9 +286,12 @@ class Field
      */
     private function renderSelect($def)
     {
+        $def[] = 'options = '.(json_encode($this->options));
+
         $def = implode(' ', $def);
 
-        $tpl = "<select $def/></select>";
+        //die($def);
+        $tpl = "<sing-form-select $def/></sing-form-select>";
 
         return $tpl;
     }
@@ -277,11 +310,59 @@ class Field
 
         $def = implode(' ', $def);
 
-        $tpl = "<input $def/>";
+        $tpl = "<sing-form-decimal $def></sing-form-decimal>";
 
         return $tpl;
     }
 
+    /**
+     * Renderiza um campo do tipo date.
+     *
+     * @param array $def
+     *
+     * @return string
+     */
+    private function renderDate($def)
+    {
+        $def = implode(' ', $def);
+
+        $tpl = "<sing-form-date $def></sing-form-date>";
+
+        return $tpl;
+    }
+
+    /**
+     * Renderiza um campo do tipo checkbox.
+     *
+     * @param array $def
+     *
+     * @return string
+     */
+    private function renderCheckbox($def)
+    {
+        $def = implode(' ', $def);
+
+        $tpl = "<sing-form-checkbox $def></sing-form-checkbox>";
+
+        return $tpl;
+    }
+
+
+    /**
+     * Renderiza um campo do tipo hidden.
+     *
+     * @param array $def
+     *
+     * @return string
+     */
+    private function renderHidden($def)
+    {
+        $def = implode(' ', $def);
+
+        $tpl = "<input type='hidden' ng-model='record.{$this->name}' $def />";
+
+        return $tpl;
+    }
 
     /**
      * Define o tipo de campo de acordo com o tipo de campo.
@@ -316,6 +397,13 @@ class Field
             case 'combo':
                 $input = 'select';
             break;
+            case 'hidden':
+                $input = 'hidden';
+                $this->notnull = false;
+            break;
+            case 'checkbox':
+                $input = 'checkbox';
+            break;
 
         }
 
@@ -329,9 +417,17 @@ class Field
      */
     private function setValues($values)
     {
+        //echo "<pre>";
+        //print_r($values);
+        //echo "</pre>";
         foreach ($values as $field => $value) {
             $this->$field = $value;
         }
+
+        //echo "<pre>";
+        //print_r($this);
+        //echo "</pre>";
+        //die();
 
     }
 } 

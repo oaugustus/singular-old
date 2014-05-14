@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,width=device-width,height=device-height,target-densitydpi=device-dpi,user-scalable=yes" />
+    <title>Singular</title>
+
+    <!-- ícones fav e touch -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="singular-ui/app/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="singular-ui/app/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="singular-ui/app/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="singular-ui/app/ico/apple-touch-icon-57-precomposed.png">
+    <link rel="shortcut icon" href="singular-ui/app/ico/favico.png">
+    <link rel="shortcut icon" href="singular-ui/app/ico/favico.ico">
+
+    <!-- fontes do tema -->
+    <link href='http://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300italic,300,400italic,500,500italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+
+    <!-- folha de estilo do bootstrap -->
+    <link href="singular-ui/css/bootstrap/css/bootstrap.css" rel="stylesheet" />
+
+    <!-- folha de estilo das dependências -->
+    <link href="singular-ui/css/app/css/dependencies.css" rel="stylesheet" />
+
+    <!-- CSS principal do syrena -->
+    <link href="singular-ui/css/app/css/syrena-admin.css" rel="stylesheet" />
+
+    <!-- FIX do IE -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Dependências JavaScripts -->
+    <script src="singular-ui/js/syrena.js"></script>
+
+    <!-- theme app main.js -->
+    <script src="singular-ui/js/main.js"></script>
+    <script src="singular-ui/js/singular-util.js"></script>
+    <script src="singular-ui/js/singular-form.js"></script>
+    <script src="singular-ui/js/singular-ui.js"></script>
+    {{crud.compile}}
+    <script src="src/app.js"></script>
+</head>
+
+<body ng-controller="MainController">
+<toaster-container></toaster-container>
+<sing-viewport >
+
+    <sing-side-menu logo="singular-ui/css/app/img/brand.png" title="Singular" menu-items="menuItems"></sing-side-menu>
+
+    <ui-view></ui-view>
+</sing-viewport>
+
+</body>
+</html>

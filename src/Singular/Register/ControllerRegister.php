@@ -52,6 +52,11 @@ class ControllerRegister
         $controllerKey = $pack->getPackName().strtolower(implode('.',explode('\\',$relativeNamespace)));
         $controller = $reflectionClass->getShortName();
 
+        if ($reflectionClass->getParentClass()->getName() == 'Singular\\CrudController'){
+
+            $app['singular.compiler']->addController($controllerKey);
+        }
+
         $app[$controllerKey] = $this->app->share(function () use ($app, $reflectionClass, $pack) {
             $class = $reflectionClass->getName();
 
@@ -61,7 +66,7 @@ class ControllerRegister
         $$controller = $app['controllers_factory'];
 
         $this->registerControllerFilters($$controller, $controllerKey,  $annotation->filters);
-        $this->registerRoutes($$controller, $controllerKey, $reflectionClass);
+        $this->registerRoutes($$controller, $controllerKey, $reflectionClass, $pack);
 
         $routePattern = ($annotation->mount != '')  ? $pack->getPackName()."/".$annotation->mount : $pack->getPackName()."/".strtolower($controller);
         $this->app->mount($routePattern, $$controller);
@@ -75,7 +80,7 @@ class ControllerRegister
      * @param string                        $controllerService
      * @param \ReflectionClass              $reflectionClass
      */
-    private function registerRoutes($controller, $controllerService, $reflectionClass)
+    private function registerRoutes($controller, $controllerService, $reflectionClass, $pack)
     {
         $methods = $reflectionClass->getMethods();
 
@@ -88,7 +93,7 @@ class ControllerRegister
             $afterFilters = $this->reader->getMethodAnnotation($reflectionMethod, 'Singular\Annotation\After');
 
             if ($route) {
-                $this->registerBasicRoute($route, $controller, $controllerService, $reflectionClass, $reflectionMethod, $beforeFilters, $afterFilters);
+                $this->registerBasicRoute($route, $controller, $controllerService, $reflectionClass, $reflectionMethod, $beforeFilters, $afterFilters, $pack);
             }
 
             if ($direct) {
@@ -147,7 +152,7 @@ class ControllerRegister
      * @param array                         $beforeFilters
      * @param array                         $afterFilters
      */
-    private function registerBasicRoute($annotation, $controller, $controllerService, $reflectionClass, $reflectionMethod, $beforeFilters, $afterFilters)
+    private function registerBasicRoute($annotation, $controller, $controllerService, $reflectionClass, $reflectionMethod, $beforeFilters, $afterFilters, $pack)
     {
         $app = $this->app;
 
@@ -156,10 +161,18 @@ class ControllerRegister
             $routeMethods = $annotation->method == null ? $annotation->methods : array($annotation->method);
 
             if ($annotation->pattern) {
-
+                $pattern = $annotation->pattern;
                 $container = $app;
 
-                $ctr = $container->match($annotation->pattern, $controllerService.":".$reflectionMethod->getName())->method(implode('|',$routeMethods));
+//                if ($annotation->pattern == '/@'){
+//                    $routePattern = $this->getRoutePattern($reflectionMethod);
+//                    $pattern = str_replace($reflectionMethod->getName(), '', $routePattern);
+//                    $routePattern = $pack->getPackName()."/".strtolower($reflectionClass->getShortName());
+//                    echo $routePattern."".$pattern."<br>";
+//                    $container->match($routePattern."".$pattern, $controllerService.":".$reflectionMethod->getName())->method(implode('|',$routeMethods));
+//                } else {
+                    $ctr = $container->match($pattern, $controllerService.":".$reflectionMethod->getName())->method(implode('|',$routeMethods));
+//                }
 
             } else {
                 $ctr = $controller->match($this->getRoutePattern($reflectionMethod), $controllerService.":".$reflectionMethod->getName())->method(implode('|',$routeMethods));
@@ -186,6 +199,7 @@ class ControllerRegister
             }
 
             $this->registerVariableHandlers($ctr, $controllerService, $reflectionMethod);
+
 
         } else {
             throw Exception::routeMethodNotDefinedError(sprintf(

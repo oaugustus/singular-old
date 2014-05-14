@@ -159,10 +159,12 @@ class Store extends Service
             unset($data[$this->id]);
 
             try {
+
                 $this->db->insert($this->table, $this->fromArray($data));
 
                 $id = $this->db->lastInsertId($this->id);
             } catch (\Exception $e) {
+                die($e->getMessage());
             }
 
         } else {

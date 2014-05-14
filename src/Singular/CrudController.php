@@ -1,5 +1,6 @@
 <?php
 namespace Singular;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Singular\Annotation\Route;
@@ -32,6 +33,20 @@ class CrudController extends Controller
     protected $store = null;
 
     /**
+     * Título a ser exibido no painel principal do módulo.
+     *
+     * @var string
+     */
+    protected $title = '';
+
+    /**
+     * Título a ser exibido no painel de listagem do módulo.
+     *
+     * @var string
+     */
+    protected $listTitle = '';
+
+    /**
      * Referência à conexão de banco de dados.
      *
      * @var string
@@ -42,6 +57,14 @@ class CrudController extends Controller
     {
         if ($this->table == ''){
             throw new \Exception('A propriedade $table do CrudController "'.$this->getClassName().'" precisa ser definida');
+        }
+
+        if ($this->title == ''){
+            $this->title = $this->getShortName();
+        }
+
+        if ($this->listTitle == ''){
+            $this->listTitle = 'Lista de '.$this->getShortName().'s';
         }
 
         parent::__construct($app, $pack);
@@ -56,11 +79,10 @@ class CrudController extends Controller
      *
      * @return JsonResponse
      */
-    public function get(Request $request)
+    public function get(Request $request, $id)
     {
         $app = $this->app;
 
-        $id = $request->get('id',1);//@todo: remover default = 1
         $rec = $this->getStore()->find($id);
 
         return $app->json(array(
@@ -72,13 +94,13 @@ class CrudController extends Controller
     /**
      * Localiza e retorna um conjunto de registros da tabela.
      *
-     * @route(method="get")
+     * @route(method="post")
      *
      * @param Request $request
      *
      * @return JsonResponse
      */
-    public function search(Request $request)
+    public function query(Request $request)
     {
         $app = $this->app;
 
@@ -102,7 +124,7 @@ class CrudController extends Controller
     /**
      * Cria ou atualiza um registro na tabela.
      *
-     * @route(method="get")
+     * @route(method="post")
      *
      * @param Request $request
      *
@@ -124,17 +146,17 @@ class CrudController extends Controller
     /**
      * Remove um registro na tabela.
      *
-     * @route(method="get")
+     * @route(method="delete")
      *
      * @param Request $request
      *
      * @return JsonResponse
      */
-    public function remove(Request $request)
+    public function remove(Request $request, $id)
     {
         $app = $this->app;
 
-        $id = $request->get('id',2); // @todo: remover default
+        //$id = $request->get('id',2); // @todo: remover default
 
         return $app->json(array(
             'success' => $this->getStore()->remove($id)
@@ -144,7 +166,7 @@ class CrudController extends Controller
     /**
      * Remove uma seleção de registros da tabela.
      *
-     * @route(method="get")
+     * @route(method="delete")
      *
      * @param Request $request
      *
@@ -169,19 +191,123 @@ class CrudController extends Controller
         ));
     }
 
-    /**
-     * Testa a compilação do formulário.
-     *
-     * @route(method="get")
-     *
-     * @param Request $request
-     *
-     * @return JsonResponse
-     */
-    public function compileForm(Request $request)
+    public function _compile($package, $module)
     {
-        return $this->app->json($this->getForm()->compile());
+        $app = $this->app;
+
+        $fs = new Filesystem();
+
+        $runtimeDir = $app['base_dir'].'/web/runtime';
+        $compiled = $this->_compileModule($package, $module)."\n\n";
+        $compiled.= $this->_compileStore($package, $module)."\n\n";
+        $compiled.= $this->_compileList($package, $module)."\n\n";
+        $compiled.= $this->_compileForm($package, $module)."\n\n";
+
+        file_put_contents("$runtimeDir/$package.$module.js", $compiled);
+
+        $tpl = '<script type="text/javascript" src="%s"></script>';
+
+        echo sprintf($tpl, "runtime/$package.$module.js");
     }
+
+    /**
+     * Compila o script de definição do módulo.
+     *
+     * @param $package
+     * @param $module
+     */
+    private function _compileModule($package, $module)
+    {
+        $moduleScript = file_get_contents(__DIR__."/Crud/tpl/module.tpl.js");
+        $moduleScript = str_replace('@package', $package, $moduleScript);
+        $moduleScript = str_replace('@module', $module, $moduleScript);
+
+        return "//$package.$module module \n".$moduleScript;
+    }
+
+    /**
+     * Compila os componentes da página de listagem do módulo.
+     *
+     * @param $package
+     * @param $module
+     */
+    private function _compileList($package, $module)
+    {
+        $html = file_get_contents(__DIR__."/Crud/tpl/list.tpl.html");
+        $html = str_replace('@package', $package, $html);
+        $html = str_replace('@module', $module, $html);
+        $html = str_replace('@title', $this->title, $html);
+        $html = str_replace('@listTitle', $this->listTitle, $html);
+
+        $id = "src/$package/$module/views/list.html";
+        $tpl = '<script type="text/ng-template" id="%s">%s;</script>';
+        echo sprintf($tpl, $id, $html);
+
+        $listCtrl = file_get_contents(__DIR__."/Crud/tpl/list.controller.tpl.js");
+        $listCtrl = str_replace('@package', $package, $listCtrl);
+        $listCtrl = str_replace('@Package', ucfirst($package), $listCtrl);
+        $listCtrl = str_replace('@module', $module, $listCtrl);
+        $listCtrl = str_replace('@Module', ucfirst($module), $listCtrl);
+
+        return "//$package.$module list controller\n".$listCtrl;
+    }
+
+    /**
+     * Compila o o serviço utilizado para salvamento/recuperação de registros.
+     *
+     * @param $package
+     * @param $module
+     */
+    private function _compileStore($package, $module)
+    {
+        $store = file_get_contents(__DIR__."/Crud/tpl/store.tpl.js");
+        $store = str_replace('@package', $package, $store);
+        $store = str_replace('@Package', ucfirst($package), $store);
+        $store = str_replace('@module', $module, $store);
+        $store = str_replace('@Module', ucfirst($module), $store);
+
+        return "//$package.$module resource service\n".$store;
+    }
+
+    /**
+     * Compila os componentes da página de cadastro/edição do módulo.
+     *
+     * @param $package
+     * @param $module
+     */
+    private function _compileForm($package, $module)
+    {
+        $html = file_get_contents(__DIR__."/Crud/tpl/form.tpl.html");
+        $html = str_replace('@package', $package, $html);
+        $html = str_replace('@module', $module, $html);
+        $html = str_replace('@title', $this->title, $html);
+        $html = str_replace('@formName', $module, $html);
+        $html = str_replace('@form', $this->getForm()->compile(), $html);
+
+
+        $id = "src/$package/$module/views/form.html";
+        $tpl = '<script type="text/ng-template" id="%s">%s;</script>';
+        echo sprintf($tpl, $id, $html);
+
+        $newCtrl = file_get_contents(__DIR__."/Crud/tpl/new.controller.tpl.js");
+        $newCtrl = str_replace('@package', $package, $newCtrl);
+        $newCtrl = str_replace('@Package', ucfirst($package), $newCtrl);
+        $newCtrl = str_replace('@module', $module, $newCtrl);
+        $newCtrl = str_replace('@Module', ucfirst($module), $newCtrl);
+
+        $return = "//$package.$module new controller\n".$newCtrl;
+
+        $editCtrl = file_get_contents(__DIR__."/Crud/tpl/edit.controller.tpl.js");
+        $editCtrl = str_replace('@package', $package, $editCtrl);
+        $editCtrl = str_replace('@Package', ucfirst($package), $editCtrl);
+        $editCtrl = str_replace('@module', $module, $editCtrl);
+        $editCtrl = str_replace('@Module', ucfirst($module), $editCtrl);
+
+        $return .= "//$package.$module edit controller\n".$editCtrl;
+
+        return $return;
+    }
+
 
     /**
      * Recupera o store associado ao CrudController.
@@ -255,7 +381,7 @@ class CrudController extends Controller
     {
         switch ($service) {
             case 'store':
-                return 'Store';
+                return 'Singular\Store';
             break;
             case 'form':
                 return 'Singular\Crud\Form';

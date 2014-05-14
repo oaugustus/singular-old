@@ -18,7 +18,7 @@ class Form extends CrudService
         $fields = $this->getFields();
         $rows = $this->mountFields($fields);
 
-        $this->writeTemplate($rows, $fields);
+        return $this->writeTemplate($rows, $fields);
     }
 
     /**
@@ -31,8 +31,12 @@ class Form extends CrudService
     {
         $tpl = '';
 
+//        echo "<pre>";
+//        print_r($fields);
+//        echo "</pre>";
+        //die();
         foreach ($rows as $row) {
-            $tpl.= "<div class='row'>";
+            $tpl.= "<div class='row' style='padding-left: 0px;'>";
 
             foreach ($row as $field) {
                 $tpl.= $fields[$field]->render();
@@ -41,7 +45,7 @@ class Form extends CrudService
             $tpl.= '</div>';
         }
 
-        echo $tpl;
+        return $tpl;
 
     }
 
@@ -55,7 +59,11 @@ class Form extends CrudService
         $rows = array();
 
         foreach ($fields as $name => $field) {
-            $rows[$field->row][] = $name;
+            $rowIdx = $field->row;
+            if ($rowIdx == 1000){
+                $rowIdx = count($rows);
+            }
+            $rows[$rowIdx][] = $name;
         }
 
         ksort($rows);
@@ -77,7 +85,6 @@ class Form extends CrudService
         $count = 0;
 
         foreach ($columns as $column) {
-
             $count++;
 
             $field = array (
@@ -93,9 +100,11 @@ class Form extends CrudService
             );
 
             if ($column->getComment() != '') {
+                //echo $column->getComment();
                 $field = array_merge($field, json_decode($column->getComment(),true));
             }
 
+            //die();
             $fields[$field['name']] = new Field($field);
         }
 

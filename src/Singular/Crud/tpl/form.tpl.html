@@ -1,0 +1,13 @@
+<sing-page>
+    <sing-page-header title="@title" profile="profile" on-exit-click="onExit()" on-profile-click="onProfile()"></sing-page-header>
+
+    <sing-app fixed-header="true" form-name="@formName" form="true" on-form-submit="formSubmit()">
+        <sing-form-toolbar breadcrumbs="breadcrumbs" on-save-click="onSaveClick()" on-cancel-click="onCancelClick()"></sing-form-toolbar>
+        <sing-app-body>
+            <sing-form-panel title="Novo @title">
+                @form
+            </sing-form-panel>
+        </sing-app-body>
+    </sing-app>
+
+</sing-page>
